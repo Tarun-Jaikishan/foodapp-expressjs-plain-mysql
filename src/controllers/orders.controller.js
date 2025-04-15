@@ -89,30 +89,80 @@ const createOrder = async (req, res) => {
 
 const getOrders = async (req, res) => {
   try {
-    const { user_id, restaurant_id, product_id, qty } = req.body;
+    const { user_id } = req.query;
 
-    mysqlClient.query(`select * from cart`, (err, results) => {
-      if (err) {
-        res.status(400).json({ message: "Error in DB" });
-        return;
+    mysqlClient.query(
+      `
+      SELECT 
+        mo.id AS master_order_id,
+        mo.uuid,
+        mo.user_id,
+        mo.house_number,
+        mo.street_name,
+        mo.state_name,
+        mo.city_name,
+        mo.pincode,
+        mo.created_at,
+
+        o.id AS order_id,
+        o.restaurant_id,
+        r.name AS restaurant_name,
+        o.product_id,
+        p.name AS product_name,
+        p.price AS product_price,
+        o.qty
+
+      FROM master_orders mo
+      LEFT JOIN orders o ON mo.uuid = o.uuid
+      LEFT JOIN restaurants r ON o.restaurant_id = r.id
+      LEFT JOIN products p ON o.product_id = p.id
+      WHERE mo.user_id = ?
+      `,
+      [user_id],
+      (err, results) => {
+        if (err) {
+          console.error(err);
+          return res.status(400).json({ message: "Error in DB" });
+        }
+
+        const grouped = {};
+
+        results.forEach((row) => {
+          if (!grouped[row.uuid]) {
+            grouped[row.uuid] = {
+              id: row.master_order_id,
+              uuid: row.uuid,
+              user_id: row.user_id,
+              house_number: row.house_number,
+              street_name: row.street_name,
+              state_name: row.state_name,
+              city_name: row.city_name,
+              pincode: row.pincode,
+              created_at: row.created_at,
+              orders: [],
+            };
+          }
+
+          if (row.order_id) {
+            grouped[row.uuid].orders.push({
+              order_id: row.order_id,
+              restaurant_id: row.restaurant_id,
+              restaurant_name: row.restaurant_name,
+              product_id: row.product_id,
+              product_name: row.product_name,
+              product_price: row.product_price,
+              qty: row.qty,
+            });
+          }
+        });
+
+        const finalData = Object.values(grouped);
+
+        res.status(200).json({ message: "Data retrieved", data: finalData });
       }
-
-      res.status(200).json({ message: "Item added to cart retrieved" });
-    });
-
-    // mysqlClient.query(
-    //   `insert into cart (user_id, restaurant_id, product_id, qty) values (${user_id}, ${restaurant_id}, ${product_id}, ${qty})`,
-    //   (err, results) => {
-    //     if (err) {
-    //       res.status(400).json({ message: "Error in DB" });
-    //       return;
-    //     }
-
-    //     res.status(200).json({ message: "Item added to cart retrieved" });
-    //   }
-    // );
+    );
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Internal server error", err });
   }
 };
