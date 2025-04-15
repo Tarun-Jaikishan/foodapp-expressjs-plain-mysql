@@ -22,7 +22,7 @@ const getCartItems = async (req, res) => {
           inner join restaurants on cart.restaurant_id = restaurants.id
           inner join products on cart.product_id = products.id
     
-          where cart.order_placed=false and cart.user_id=${user_id};
+          where cart.user_id=${user_id};
           `,
       (err, results) => {
         if (err) {

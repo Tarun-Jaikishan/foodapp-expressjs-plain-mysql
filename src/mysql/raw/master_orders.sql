@@ -10,5 +10,7 @@ create table master_orders (
     city_name varchar(30) default(""),
     pincode varchar(6) default(""),
 
+    created_at timestamp default current_timestamp,
+
     foreign key (user_id) references users(id)
 );
