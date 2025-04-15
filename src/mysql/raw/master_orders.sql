@@ -1,6 +1,6 @@
 create table master_orders (
 	id int unsigned primary key auto_increment,
-    uuid UUID NOT NULL,
+    uuid char(36) unique not null,
     user_id int unsigned not null,
 
     -- address details
@@ -10,7 +10,5 @@ create table master_orders (
     city_name varchar(30) default(""),
     pincode varchar(6) default(""),
 
-    foreign key (user_id) references users(id),
-
-
+    foreign key (user_id) references users(id)
 );
